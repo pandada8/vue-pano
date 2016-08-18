@@ -1,6 +1,9 @@
 <template>
   <div id="app">
-    <div class="viewport">
+    <div class="viewport" v-el:viewport 
+        @mousedown="startDrag" @touchstart="startDrag"
+        @mousemove="onDrag" @touchmove="onDrag"
+        @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag">
       <h3 class="title">{{ title }}</h3>
       <canvas v-el:canvas></canvas>
     </div>
@@ -20,6 +23,39 @@ const Promise = window.Promise || require('es6-promise').Promise;
 
 export default {
   methods: {
+    startDrag(e) {
+      e = e.changedTouches ? e.changedTouches[0] : e
+      this.dragging = true
+      this.phiOld = this.phi
+      this.thetaOld = this.theta
+      this.mousePosOldX = e.pageX
+      this.mousePosOldY = e.pageY
+    },
+
+    onDrag(e) {
+      e = e.changedTouches ? e.changedTouches[0] : e
+      if (this.dragging) {
+        this.mousePosX = e.pageX
+        this.mousePosY = e.pageY
+        this.phi = this.phiOld - 0.2 * (this.mousePosX - this.mousePosOldX)
+
+        let theta = this.thetaOld + 0.2 * (this.mousePosY - this.mousePosOldY)
+        if (theta > 90) {
+          theta = 90
+        }
+        if (theta < -90) {
+          theta = -90
+        }
+        this.theta = theta
+      }
+    },
+
+    stopDrag: function () {
+      if (this.dragging) {
+        this.dragging = false
+      }
+    },
+
     initShaders() {
       const gl = this.gl
       this.program = gl.createProgram()
@@ -142,6 +178,7 @@ export default {
       // tell shader program where to find the vertex data
       var vertexAttribLoc = gl.getAttribLocation(this.program, 'aPosition')
       var vertexAttribLocUV = gl.getAttribLocation(this.program, 'aUV')
+
       gl.enableVertexAttribArray(vertexAttribLoc)
       gl.enableVertexAttribArray(vertexAttribLocUV)
       gl.vertexAttribPointer(vertexAttribLoc, 3, gl.FLOAT, false, 5 * 4, 0)
@@ -201,18 +238,18 @@ export default {
   ready() {
     const ratio = 1
     const [width, height] = [this.width, this.height].map(n => parseInt(n))
-    const $canvas = this.$els.canvas
-    const gl = this.gl = $canvas.getContext('webgl') || $canvas.getContext('experimental-webgl')
+    const {canvas, viewport} = this.$els
+    const gl = this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
 
     if (!this.gl) {
       this.error = 'Your browser does not support WebGL.'
       return
     }
 
-    $canvas.width = width * ratio
-    $canvas.height = height * ratio
-    $canvas.style.width = this.$el.style.width = width + 'px'
-    $canvas.style.height = this.$el.style.height = height + 'px'
+    canvas.width = width * ratio
+    canvas.height = height * ratio
+    canvas.style.width = viewport.style.width = width + 'px'
+    canvas.style.height = viewport.style.height = height + 'px'
 
     this.initShaders()
     this.loadTextures()
@@ -238,7 +275,7 @@ export default {
       phiOld: 0,
       theta: 0,
       thetaOld: 0,
-      mousedown: false,
+      dragging: false,
       mousePosX: 0,
       mousePosY: 0,
       mousePosOldX: 0,
