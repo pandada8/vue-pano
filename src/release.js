@@ -1,1 +1,0 @@
-import Pano from './Pano.vue'

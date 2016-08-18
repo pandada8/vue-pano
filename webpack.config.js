@@ -2,10 +2,10 @@ var path = require('path')
 var webpack = require('webpack')
 
 module.exports = {
-  entry: './src/dev.js',
+  entry: './src/main.js',
   output: {
-    path: path.resolve(__dirname, './assets'),
-    publicPath: '/assets/',
+    path: path.resolve(__dirname, './dist'),
+    publicPath: '/dist/',
     filename: 'build.js'
   },
   resolveLoader: {
@@ -16,10 +16,6 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue'
-      },
-      {
-        test: /\.glsl$/,
-        loader: 'raw'
       },
       {
         test: /\.js$/,
@@ -53,7 +49,7 @@ module.exports = {
 
 if (process.env.NODE_ENV === 'production') {
   module.exports.devtool = '#source-map'
-  module.exports.output.path = path.resolve(__dirname, './dist'),
+  // http://vuejs.github.io/vue-loader/workflow/production.html
   module.exports.plugins = (module.exports.plugins || []).concat([
     new webpack.DefinePlugin({
       'process.env': {
