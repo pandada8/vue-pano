@@ -30,6 +30,8 @@ export default {
       this.thetaOld = this.theta
       this.mousePosOldX = e.pageX
       this.mousePosOldY = e.pageY
+
+      this.animationId = requestAnimationFrame(this.draw.bind(this))
     },
 
     onDrag(e) {
@@ -54,6 +56,8 @@ export default {
       if (this.dragging) {
         this.dragging = false
       }
+
+      cancelAnimationFrame(this.animationId)
     },
 
     initShaders() {
