@@ -4,8 +4,8 @@ var webpack = require('webpack')
 module.exports = {
   entry: './src/dev.js',
   output: {
-    path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
+    path: path.resolve(__dirname, './assets'),
+    publicPath: '/assets/',
     filename: 'build.js'
   },
   resolveLoader: {
@@ -53,6 +53,7 @@ module.exports = {
 
 if (process.env.NODE_ENV === 'production') {
   module.exports.devtool = '#source-map'
+  module.exports.output.path = path.resolve(__dirname, './dist'),
   module.exports.plugins = (module.exports.plugins || []).concat([
     new webpack.DefinePlugin({
       'process.env': {
