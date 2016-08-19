@@ -52,7 +52,7 @@ export default {
       }
     },
 
-    stopDrag: function () {
+    stopDrag() {
       if (this.dragging) {
         this.dragging = false
       }
@@ -62,6 +62,7 @@ export default {
 
     initShaders() {
       const gl = this.gl
+      gl.viewport(0, 0, this.width * this.devicePixelRatio, this.height * this.devicePixelRatio)
       this.program = gl.createProgram()
       let vertex = this.shaders.vertex = gl.createShader(gl.VERTEX_SHADER)
       gl.shaderSource(vertex, shaders.vertex)
@@ -240,7 +241,7 @@ export default {
   },
 
   ready() {
-    const ratio = 1
+    const ratio = this.devicePixelRatio
     const [width, height] = [this.width, this.height].map(n => parseInt(n))
     const {canvas, viewport} = this.$els
     const gl = this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
@@ -273,6 +274,7 @@ export default {
     return {
       fov: 90,
       gl: null,
+      devicePixelRatio: window.devicePixelRatio || 1,
 
       animationId: 0,
       phi: -90,
