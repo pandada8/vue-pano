@@ -8,7 +8,8 @@ export default class Aff3d {
   }
 
   reset() {
-    this.values.fill(0)
+    for (let i = 0; i < this.values.length; i++)
+      this.values[i] = 0
   }
 
   setToIdentity() {
