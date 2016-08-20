@@ -3,6 +3,12 @@
   <head>
     <meta charset="utf-8">
     <title>vue-pano</title>
+    <style type="text/css">
+      /* disable document scrolling when you need to handle scroll event for zooming */
+      body {
+        overflow: hidden;
+      }
+    </style>
   </head>
   <body>
     <pano width="640" height="320" title="Playground"

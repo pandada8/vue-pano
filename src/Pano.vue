@@ -23,6 +23,10 @@ const Promise = window.Promise || require('es6-promise').Promise;
 
 export default {
   methods: {
+    clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v))
+    },
+
     startDrag(e) {
       e = e.changedTouches ? e.changedTouches[0] : e
       this.dragging = true
@@ -30,8 +34,7 @@ export default {
       this.thetaOld = this.theta
       this.mousePosOldX = e.pageX
       this.mousePosOldY = e.pageY
-
-      this.animationId = requestAnimationFrame(this.draw.bind(this))
+      this.draw()
     },
 
     onDrag(e) {
@@ -42,22 +45,21 @@ export default {
         this.phi = this.phiOld - 0.2 * (this.mousePosX - this.mousePosOldX)
 
         let theta = this.thetaOld + 0.2 * (this.mousePosY - this.mousePosOldY)
-        if (theta > 90) {
-          theta = 90
-        }
-        if (theta < -90) {
-          theta = -90
-        }
-        this.theta = theta
+        this.theta = this.clamp(theta, -90, 90)
       }
+    },
+
+    zoom(e) {
+      e = window.event || e
+      let delta = this.clamp(e.wheelDelta || -e.detail, -4, 4)
+      let fov = this.fov - delta
+      this.fov = this.clamp(fov, 30, 90)
     },
 
     stopDrag() {
       if (this.dragging) {
         this.dragging = false
       }
-
-      cancelAnimationFrame(this.animationId)
     },
 
     initShaders() {
@@ -236,7 +238,7 @@ export default {
       gl.bindTexture(gl.TEXTURE_2D, this.right)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 30 * 2)
 
-      this.animationId = requestAnimationFrame(this.draw.bind(this))
+      requestAnimationFrame(() => this.draw())
     }
   },
 
@@ -256,6 +258,14 @@ export default {
     canvas.style.width = viewport.style.width = width + 'px'
     canvas.style.height = viewport.style.height = height + 'px'
 
+    const zoom = this.zoom.bind(this)
+    if (addEventListener) {
+      this.$el.addEventListener('mousewheel', zoom, false);
+      this.$el.addEventListener('DOMMouseScroll', zoom, false);
+    } else {
+      this.$el.attachEvent('onmousewheel', zoom);
+    }
+
     this.initShaders()
     this.loadTextures()
     this.initModel()
@@ -272,11 +282,10 @@ export default {
 
   data() {
     return {
-      fov: 90,
+      fov: 45,
       gl: null,
       devicePixelRatio: window.devicePixelRatio || 1,
 
-      animationId: 0,
       phi: -90,
       phiOld: 0,
       theta: 0,
