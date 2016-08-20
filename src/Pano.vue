@@ -47,7 +47,7 @@ export default {
 
     onDrag(e) {
       e = e.changedTouches ? e.changedTouches[0] : e
-      const speed = 0.2
+      const speed = 0.05
       if (this.dragging) {
         this.mouseX = e.pageX
         this.mouseY = e.pageY
