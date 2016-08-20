@@ -54,7 +54,7 @@ export default {
       e = window.event || e
       let delta = this.clamp(e.wheelDelta || -e.detail, -4, 4)
       let fov = this.fov - delta
-      this.fov = this.clamp(fov, 30, 90)
+      this.fov = this.clamp(fov, 20, 90)
     },
 
     stopDrag() {
