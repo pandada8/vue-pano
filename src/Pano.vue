@@ -1,12 +1,19 @@
 <template>
-  <div id="app">
-    <div class="viewport" v-el:viewport 
-        @mousedown="startDrag" @touchstart="startDrag"
-        @mousemove="onDrag" @touchmove="onDrag"
-        @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag">
-      <h3 class="title">{{ title }}</h3>
+  <div class="viewport" v-el:viewport 
+      @mousedown="startDrag" @touchstart="startDrag"
+      @mousemove="onDrag" @touchmove="onDrag"
+      @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag">
+
+    <div class="error" v-if="error"><span>{{ error }}</span></div>
+    <template v-else>
+      <div class="about">
+        <h3>{{ title }}</h3>
+        <article>{{ description }}</article>
+      </div>
       <canvas v-el:canvas></canvas>
-    </div>
+      <div class="debug" v-show="debug">fov: {{ fov }}, theta: {{ theta }}, phi: {{ phi }}</div>
+    </template>
+
   </div>
 </template>
 
@@ -63,9 +70,22 @@ export default {
       }
     },
 
+    resize() {
+      const ratio = window.devicePixelRatio || 1
+      const {width, height} = this
+      const {canvas, viewport} = this.$els
+
+      canvas.style.width = viewport.style.width = width ? width + 'px' : '100%'
+      canvas.style.height = viewport.style.height = height ? height + 'px' : '100%'
+
+      canvas.width = canvas.clientWidth * ratio
+      canvas.height = canvas.clientHeight * ratio
+
+      this.gl.viewport(0, 0, canvas.width, canvas.height)
+    },
+
     initShaders() {
-      const gl = this.gl
-      gl.viewport(0, 0, this.width * this.devicePixelRatio, this.height * this.devicePixelRatio)
+      const gl = this.gl      
       this.program = gl.createProgram()
 
       let vertex = this.shaders.vertex = gl.createShader(gl.VERTEX_SHADER)
@@ -109,7 +129,7 @@ export default {
       Promise.all(tasks).then(images => {
         
       }).catch(e => {
-        this.error = 'Unable to load all images.'
+        this.error = 'Unable to load all images'
       })
     },
 
@@ -202,7 +222,6 @@ export default {
       const gl = this.gl
 
       let {phi, theta, fov} = this
-
       if (this.almostEqual(phi, this.previous.phi) 
           && this.almostEqual(theta, this.previous.theta)
           && this.almostEqual(fov, this.previous.fov)) {
@@ -210,14 +229,10 @@ export default {
         return 
       }
 
-      this.previous.phi = phi
-      this.previous.theta = theta
-      this.previous.fov = fov
-
       // calculate the viewing direction from the spherical coordinates
-      let dirX = Math.cos(Math.PI * phi / 180) * Math.cos(Math.PI * theta / 180)
-      let dirY = Math.sin(Math.PI * theta / 180)
-      let dirZ = Math.sin(Math.PI * phi / 180) * Math.cos(Math.PI * theta / 180)
+      let dirX = Math.cos(Math.PI * this.phi / 180) * Math.cos(Math.PI * this.theta / 180)
+      let dirY = Math.sin(Math.PI * this.theta / 180)
+      let dirZ = Math.sin(Math.PI * this.phi / 180) * Math.cos(Math.PI * this.theta / 180)
 
       let viewerDirection = new Vec3(dirX, dirY, dirZ)
 
@@ -230,18 +245,18 @@ export default {
 
       let projectionMatrix = new Aff3d()
       let aspect = gl.drawingBufferWidth / gl.drawingBufferHeight
-      projectionMatrix.perspective(fov, aspect, 0.1, 2)
+      projectionMatrix.perspective(this.fov, aspect, 0.1, 2)
 
       // clear screen
       gl.clearColor(1.0, 1.0, 1.0, 1.0)
       gl.clear(gl.COLOR_BUFFER_BIT)
 
       // pass parameters to the shader program
-      gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "modelviewMatrix"),
+      gl.uniformMatrix4fv(gl.getUniformLocation(this.program, 'modelviewMatrix'),
         false, modelviewMatrix.data())
-      gl.uniformMatrix4fv(gl.getUniformLocation(this.program, "projectionMatrix"),
+      gl.uniformMatrix4fv(gl.getUniformLocation(this.program, 'projectionMatrix'),
         false, projectionMatrix.data())
-      gl.uniform1i(gl.getUniformLocation(this.program, "uSampler"), 0)
+      gl.uniform1i(gl.getUniformLocation(this.program, 'uSampler'), 0)
 
       // draw each side of the cube with the corresponding texture of the cube map
       let textures = this.textures
@@ -263,27 +278,29 @@ export default {
   },
 
   ready() {
-    const ratio = this.devicePixelRatio
-    const [width, height] = [this.width, this.height].map(n => parseInt(n))
-    const {canvas, viewport} = this.$els
+    const {canvas} = this.$els
     const gl = this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
 
-    if (!this.gl) {
+    if (!gl) {
       this.error = 'Your browser does not support WebGL.'
       return
     }
 
-    canvas.width = width * ratio
-    canvas.height = height * ratio
-    canvas.style.width = viewport.style.width = width + 'px'
-    canvas.style.height = viewport.style.height = height + 'px'
+    this.resize()
+
+    this.previous.phi = -this.phi
+    this.previous.theta = -this.theta
+    this.previous.fov = -this.fov
 
     const zoom = this.zoom.bind(this)
+    const resize = this.resize.bind(resize)
     if (addEventListener) {
-      this.$el.addEventListener('mousewheel', zoom, false);
-      this.$el.addEventListener('DOMMouseScroll', zoom, false);
+      this.$el.addEventListener('mousewheel', zoom, false)
+      this.$el.addEventListener('DOMMouseScroll', zoom, false)
+      addEventListener('resize', resize)
     } else {
-      this.$el.attachEvent('onmousewheel', zoom);
+      this.$el.attachEvent('onmousewheel', zoom)
+      attachEvent('resize', resize)
     }
 
     this.initShaders()
@@ -297,14 +314,16 @@ export default {
     height: String,
     title: String,
     bundle: String,
-    format: String
+    format: String,
+    debug: String,
+    description: String
   },
 
   data() {
     return {
-      devicePixelRatio: window.devicePixelRatio || 1,
       gl: null,
       dragging: false,
+      error: '',
 
       phi: -90,
       theta: 0,
@@ -313,9 +332,9 @@ export default {
       mouseY: 0,
       
       previous: {
-        phi: -1,
-        theta: -1,
-        fov: -1,
+        phi: 0,
+        theta: 0,
+        fov: 0,
         mouseX: 0,
         mouseY: 0
       },
@@ -342,6 +361,7 @@ export default {
 <style scoped>
 
 .viewport {
+  font-family: Helvetica, Arial, sans-serif;
   position: relative;
 }
 
@@ -349,23 +369,54 @@ export default {
   position: absolute;
 }
 
-.title {
-  background-color: rgba(0, 0, 0, .0);
-  color: rgba(255, 255, 255, .5);
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 12px;
+.about {
+  background-color: rgba(0, 0, 0, 0.67);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
   font-weight: 100;
-  left: 0;
   margin: 0;
-  padding: 10px;
+  padding: 20px;
   right: 0;
   top: 0;
-  transition: background-color;
+  bottom: 0;
+  overflow: hidden;
+  width: 240px;
   z-index: 1;
 }
 
-.title:hover {
-  background-color: rgba(0, 0, 0, .3);
+.error {
+  background: radial-gradient(ellipse at center, #4c4c4c 0%,#2c2c2c 50%,#131313 100%);
+  bottom: 0;
+  color: #fff;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.error > span {
+  color: rgba(255, 255, 255, 0.74);
+  display: block;
+  font-size: 16px;
+  font-weight: 100;
+  left: 0;
+  line-height: 24px;
+  margin-top: -12px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  text-shadow: 0 0 2px #000;
+  top: 50%;
+}
+
+.debug {
+  font-size: 12px;
+  font-family: monospace;
+  background: rgba(0, 0, 0, .3);
+  color: rgba(255, 255, 255, .7);
+  padding: 10px;
+  white-space:nowrap;
+  bottom: 0;
+  left: 0;
 }
 
 canvas {
