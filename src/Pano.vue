@@ -30,21 +30,22 @@ export default {
     startDrag(e) {
       e = e.changedTouches ? e.changedTouches[0] : e
       this.dragging = true
-      this.phiOld = this.phi
-      this.thetaOld = this.theta
-      this.mousePosOldX = e.pageX
-      this.mousePosOldY = e.pageY
-      this.draw()
+      this.previous = {
+        phi: this.phi,
+        theta: this.theta,
+        mouseX: e.pageX,
+        mouseY: e.pageY
+      }
     },
 
     onDrag(e) {
       e = e.changedTouches ? e.changedTouches[0] : e
+      const speed = 0.2
       if (this.dragging) {
-        this.mousePosX = e.pageX
-        this.mousePosY = e.pageY
-        this.phi = this.phiOld - 0.2 * (this.mousePosX - this.mousePosOldX)
-
-        let theta = this.thetaOld + 0.2 * (this.mousePosY - this.mousePosOldY)
+        this.mouseX = e.pageX
+        this.mouseY = e.pageY
+        this.phi = this.previous.phi - speed * (this.mouseX - this.previous.mouseX)
+        let theta = this.previous.theta + speed * (this.mouseY - this.previous.mouseY)
         this.theta = this.clamp(theta, -90, 90)
       }
     },
@@ -66,6 +67,7 @@ export default {
       const gl = this.gl
       gl.viewport(0, 0, this.width * this.devicePixelRatio, this.height * this.devicePixelRatio)
       this.program = gl.createProgram()
+
       let vertex = this.shaders.vertex = gl.createShader(gl.VERTEX_SHADER)
       gl.shaderSource(vertex, shaders.vertex)
       gl.compileShader(vertex)
@@ -84,11 +86,11 @@ export default {
       const gl = this.gl
       let tasks = ['top', 'bottom', 'front', 'left', 'back', 'right'].map(
         direction => new Promise((resolve, reject) => {
-          let url = this.images + direction + '.' + this.format
+          let url = this.bundle + direction + '.' + this.format
           let img = new Image()
 
           img.onload = () => {
-            let texture = this[direction] = gl.createTexture()
+            let texture = this.textures[direction] = gl.createTexture()
             gl.bindTexture(gl.TEXTURE_2D, texture)
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
@@ -225,20 +227,21 @@ export default {
       gl.uniform1i(gl.getUniformLocation(this.program, "uSampler"), 0)
 
       // draw each side of the cube with the corresponding texture of the cube map
-      gl.bindTexture(gl.TEXTURE_2D, this.front)
+      let textures = this.textures
+      gl.bindTexture(gl.TEXTURE_2D, textures.front)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0)
-      gl.bindTexture(gl.TEXTURE_2D, this.back)
+      gl.bindTexture(gl.TEXTURE_2D, textures.back)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 6 * 2)
-      gl.bindTexture(gl.TEXTURE_2D, this.top)
+      gl.bindTexture(gl.TEXTURE_2D, textures.top)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 12 * 2)
-      gl.bindTexture(gl.TEXTURE_2D, this.bottom)
+      gl.bindTexture(gl.TEXTURE_2D, textures.bottom)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 18 * 2)
-      gl.bindTexture(gl.TEXTURE_2D, this.left)
+      gl.bindTexture(gl.TEXTURE_2D, textures.left)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 24 * 2)
-      gl.bindTexture(gl.TEXTURE_2D, this.right)
+      gl.bindTexture(gl.TEXTURE_2D, textures.right)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 30 * 2)
 
-      requestAnimationFrame(() => this.draw())
+      requestAnimationFrame(this.draw.bind(this))
     }
   },
 
@@ -276,7 +279,7 @@ export default {
     width: String,
     height: String,
     title: String,
-    images: String,
+    bundle: String,
     format: String
   },
 
@@ -286,22 +289,27 @@ export default {
       gl: null,
       devicePixelRatio: window.devicePixelRatio || 1,
 
-      phi: -90,
-      phiOld: 0,
-      theta: 0,
-      thetaOld: 0,
       dragging: false,
-      mousePosX: 0,
-      mousePosY: 0,
-      mousePosOldX: 0,
-      mousePosOldY: 0,
+      phi: -90,
+      theta: 0,
+      mouseX: 0,
+      mouseY: 0,
+      
+      previous: {
+        phi: 0,
+        theta: 0,
+        mouseX: 0,
+        mouseY: 0
+      },
 
-      top: null,
-      bottom: null,
-      front: null,
-      back: null,
-      left: null,
-      right: null,
+      textures: {
+        top: null,
+        bottom: null,
+        front: null,
+        back: null,
+        left: null,
+        right: null,  
+      },
 
       program: null,
       shaders: {
