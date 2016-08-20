@@ -194,13 +194,30 @@ export default {
       gl.vertexAttribPointer(vertexAttribLocUV, 2, gl.FLOAT, false, 5 * 4, 3 * 4)
     },
 
+    almostEqual(a, b) {
+      return Math.abs(a - b) < 1e-4
+    },
+
     draw() {
       const gl = this.gl
 
+      let {phi, theta, fov} = this
+
+      if (this.almostEqual(phi, this.previous.phi) 
+          && this.almostEqual(theta, this.previous.theta)
+          && this.almostEqual(fov, this.previous.fov)) {
+        requestAnimationFrame(this.draw.bind(this))
+        return 
+      }
+
+      this.previous.phi = phi
+      this.previous.theta = theta
+      this.previous.fov = fov
+
       // calculate the viewing direction from the spherical coordinates
-      let dirX = Math.cos(Math.PI * this.phi / 180) * Math.cos(Math.PI * this.theta / 180)
-      let dirY = Math.sin(Math.PI * this.theta / 180)
-      let dirZ = Math.sin(Math.PI * this.phi / 180) * Math.cos(Math.PI * this.theta / 180)
+      let dirX = Math.cos(Math.PI * phi / 180) * Math.cos(Math.PI * theta / 180)
+      let dirY = Math.sin(Math.PI * theta / 180)
+      let dirZ = Math.sin(Math.PI * phi / 180) * Math.cos(Math.PI * theta / 180)
 
       let viewerDirection = new Vec3(dirX, dirY, dirZ)
 
@@ -213,7 +230,7 @@ export default {
 
       let projectionMatrix = new Aff3d()
       let aspect = gl.drawingBufferWidth / gl.drawingBufferHeight
-      projectionMatrix.perspective(this.fov, aspect, 0.1, 2)
+      projectionMatrix.perspective(fov, aspect, 0.1, 2)
 
       // clear screen
       gl.clearColor(1.0, 1.0, 1.0, 1.0)
@@ -285,19 +302,20 @@ export default {
 
   data() {
     return {
-      fov: 45,
-      gl: null,
       devicePixelRatio: window.devicePixelRatio || 1,
-
+      gl: null,
       dragging: false,
+
       phi: -90,
       theta: 0,
+      fov: 45,
       mouseX: 0,
       mouseY: 0,
       
       previous: {
-        phi: 0,
-        theta: 0,
+        phi: -1,
+        theta: -1,
+        fov: -1,
         mouseX: 0,
         mouseY: 0
       },
