@@ -6,7 +6,9 @@
 
     <div class="error" v-if="error"><span>{{ error }}</span></div>
     <template v-else>
-      <div class="about">
+      <div class="about" v-el:about
+        @mousedown="dismiss" @touchstart="dismiss"
+        @mousemove="dismiss" @touchmove="dismiss">
         <h3>{{ title }}</h3>
         <article>{{ description }}</article>
       </div>
@@ -32,6 +34,10 @@ export default {
   methods: {
     clamp(v, min, max) {
       return Math.max(min, Math.min(max, v))
+    },
+
+    dismiss(e) {
+      e.stopPropagation()
     },
 
     startDrag(e) {
@@ -278,7 +284,7 @@ export default {
   },
 
   ready() {
-    const {canvas} = this.$els
+    const {canvas, about} = this.$els
     const gl = this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
 
     if (!gl) {
@@ -294,12 +300,17 @@ export default {
 
     const zoom = this.zoom.bind(this)
     const resize = this.resize.bind(resize)
+    const dismiss = this.dismiss.bind(dismiss)
     if (addEventListener) {
       this.$el.addEventListener('mousewheel', zoom, false)
       this.$el.addEventListener('DOMMouseScroll', zoom, false)
+      about.addEventListener('mousewheel', dismiss, false)
+      about.addEventListener('DOMMouseScroll', dismiss, false)
+
       addEventListener('resize', resize)
     } else {
       this.$el.attachEvent('onmousewheel', zoom)
+      about.attachEvent('onmousewheel', dismiss)
       attachEvent('resize', resize)
     }
 
@@ -370,18 +381,30 @@ export default {
 }
 
 .about {
-  background-color: rgba(0, 0, 0, 0.67);
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 13px;
+  background-color: rgba(255, 255, 255, 0.98);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  color: #3d3d3d;
+  font-size: 14px;
   font-weight: 100;
+  line-height: 20px;
   margin: 0;
-  padding: 20px;
-  right: 0;
-  top: 0;
-  bottom: 0;
   overflow: hidden;
+  padding: 20px;
+  right: 10px;
+  top: 10px;
   width: 240px;
   z-index: 1;
+  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+}
+
+.about:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.about h3 {
+  font-size: 20px;
+  font-weight: 300;
 }
 
 .error {
