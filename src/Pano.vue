@@ -11,6 +11,13 @@
           <button class="zoomin" v-el:zoomin @click="zoomin">+</button>
           <button class="zoomout" v-el:zoomout @click="zoomout">-</button>
         </div>
+
+        <div class="campas">
+          <div class="direction hover" v-bind:style="{ transform: 'rotate(' + phi + 'deg)' }" @click="reset">
+            <div class="north"></div>
+            <div class="south"></div>
+          </div>
+        </div>
       </div>
       <div class="about hover" v-el:about
         @mousedown="dismiss" @touchstart="dismiss"
@@ -40,6 +47,10 @@ export default {
   methods: {
     clamp(v, min, max) {
       return Math.max(min, Math.min(max, v))
+    },
+
+    reset() {
+      this.phi = this.theta = 0
     },
 
     zoomin(e) {
@@ -426,10 +437,15 @@ export default {
   font-weight: 300;
 }
 
-.zoom {
+.controls {
   left: 10px;
   position: absolute;
   top: 10px;
+}
+
+.zoom {
+  width: 26px;
+  margin-left: 12px;
 }
 
 .zoom > button {
@@ -456,6 +472,37 @@ export default {
 
 .zoomout {
   border-radius: 0 0 2px 2px;
+}
+
+.campas {
+  margin-top: 10px;
+}
+
+.campas > .direction {
+  background: rgba(0, 0, 0, 0.48);
+  border-radius: 26px;
+  border: 12px solid #000;
+  cursor: pointer;
+  height: 28px;
+  transform: rotate(0);
+  width: 28px;
+}
+
+.campas > .direction > div {
+  border-style: solid;
+  height: 0;
+  width: 0;
+  transform: translate(8px, -8px);
+}
+
+.campas .north {
+  border-color: transparent transparent #ba2226 transparent;
+  border-width: 0 6px 24px 6px;
+}
+
+.campas .south {
+  border-color: #c6c6c6 transparent transparent transparent;
+  border-width: 24px 6px 0 6px;
 }
 
 .error {
