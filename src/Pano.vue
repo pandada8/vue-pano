@@ -6,7 +6,13 @@
 
     <div class="error" v-if="error"><span>{{ error }}</span></div>
     <template v-else>
-      <div class="about" v-el:about
+      <div class="controls" v-el:controls>
+        <div class="zoom hover">
+          <button class="zoomin" v-el:zoomin @click="zoomin">+</button>
+          <button class="zoomout" v-el:zoomout @click="zoomout">-</button>
+        </div>
+      </div>
+      <div class="about hover" v-el:about
         @mousedown="dismiss" @touchstart="dismiss"
         @mousemove="dismiss" @touchmove="dismiss">
         <h3>{{ title }}</h3>
@@ -34,6 +40,16 @@ export default {
   methods: {
     clamp(v, min, max) {
       return Math.max(min, Math.min(max, v))
+    },
+
+    zoomin(e) {
+      let fov = this.fov -= 4
+      this.fov = this.clamp(fov, 20, 90)
+    },
+
+    zoomout(e) {
+      let fov = this.fov += 4
+      this.fov = this.clamp(fov, 20, 90)
     },
 
     dismiss(e) {
@@ -380,10 +396,18 @@ export default {
   position: absolute;
 }
 
+.hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 1px 2px rgba(0, 0, 0, .24);
+  transition: all 0.3s cubic-bezier(.25, .8, .25, 1);
+}
+
+.hover:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22);
+}
+
 .about {
-  background-color: rgba(255, 255, 255, 0.98);
+  background-color: #fff;
   border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
   color: #3d3d3d;
   font-size: 14px;
   font-weight: 100;
@@ -395,16 +419,43 @@ export default {
   top: 10px;
   width: 240px;
   z-index: 1;
-  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
-}
-
-.about:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 }
 
 .about h3 {
   font-size: 20px;
   font-weight: 300;
+}
+
+.zoom {
+  left: 10px;
+  position: absolute;
+  top: 10px;
+}
+
+.zoom > button {
+  background: rgba(0, 0, 0, 0.87);
+  border: none;
+  color: #c9c9c9;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.zoom > button:hover {
+  color: #fff;
+}
+
+.zoom > button:focus {
+  outline: none;
+}
+
+.zoomin {
+  border-radius: 2px 2px 0 0;
+}
+
+.zoomout {
+  border-radius: 0 0 2px 2px;
 }
 
 .error {
