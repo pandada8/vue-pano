@@ -455,6 +455,7 @@ export default {
   cursor: pointer;
   font-family: monospace;
   font-size: 16px;
+  margin: 0;
   padding: 4px 8px;
 }
 
@@ -543,6 +544,12 @@ export default {
 canvas {
   background: #000;
   z-index: -1;
+}
+
+@media (max-width: 1024px) {
+  .about {
+    display: none;
+  }
 }
 
 </style>
