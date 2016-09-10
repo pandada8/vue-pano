@@ -357,6 +357,7 @@ export default {
       about.addEventListener('DOMMouseScroll', dismiss, false)
       addEventListener('resize', resize, false)
       addEventListener('touchmove', event => event.preventDefault(), false)
+      document.body.addEventListener('touchstart', event => event.preventDefault())
     } else {
       this.$el.attachEvent('onmousewheel', zoom)
       about.attachEvent('onmousewheel', dismiss)
