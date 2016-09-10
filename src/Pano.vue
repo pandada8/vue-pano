@@ -7,13 +7,13 @@
     <div class="error" v-if="error"><span>{{ error }}</span></div>
     <template v-else>
       <div class="controls" v-el:controls>
-        <div class="zoom hover">
+        <div class="zoom">
           <button class="zoomin" v-el:zoomin @click="zoomin">+</button>
           <button class="zoomout" v-el:zoomout @click="zoomout">-</button>
         </div>
 
         <div class="campas">
-          <div class="direction hover" v-bind:style="{ transform: 'rotate(' + phi + 'deg)' }" @click="reset">
+          <div class="direction" v-bind:style="{ transform: 'rotate(' + phi + 'deg)' }" @click="reset">
             <div class="north"></div>
             <div class="south"></div>
           </div>
@@ -55,12 +55,12 @@ export default {
 
     zoomin(e) {
       let fov = this.fov -= 4
-      this.fov = this.clamp(fov, 20, 90)
+      this.fov = this.clamp(fov, this.minFov, this.maxFov)
     },
 
     zoomout(e) {
       let fov = this.fov += 4
-      this.fov = this.clamp(fov, 20, 90)
+      this.fov = this.clamp(fov, this.minFov, this.maxFov)
     },
 
     dismiss(e) {
@@ -68,19 +68,42 @@ export default {
     },
 
     startDrag(e) {
+      if (e.targetTouches && e.targetTouches.length >= 2) {
+        let p1 = event.targetTouches[0], p2 = event.targetTouches[1]
+        let distance = Math.sqrt(Math.pow(p2.pageX - p1.pageX, 2) + Math.pow(p2.pageY - p1.pageY, 2))
+        
+        this.previous.pinchDistance = distance
+        this.previous.fov = this.fov
+        this.pinching = true
+
+        return
+      }
+
       e = e.changedTouches ? e.changedTouches[0] : e
       this.dragging = true
       this.previous = {
         phi: this.phi,
         theta: this.theta,
         mouseX: e.pageX,
-        mouseY: e.pageY
+        mouseY: e.pageY,
+        touchPoints: [],
+        pinchDistance: null,
+        fov: this.fov
       }
     },
 
     onDrag(e) {
+      if (this.pinching) {
+        let p1 = event.targetTouches[0], p2 = event.targetTouches[1]
+        let distance = Math.sqrt(Math.pow(p2.pageX - p1.pageX, 2) + Math.pow(p2.pageY - p1.pageY, 2))
+        let fov = this.fov + (this.previous.pinchDistance - distance) / distance * (100 / window.devicePixelRatio)
+        this.previous.pinchDistance = distance
+        this.fov = this.clamp(fov, this.minFov, this.maxFov)
+        return
+      }
+
       e = e.changedTouches ? e.changedTouches[0] : e
-      const speed = 0.05
+      const speed = 0.05 * window.devicePixelRatio
       if (this.dragging) {
         this.mouseX = e.pageX
         this.mouseY = e.pageY
@@ -94,13 +117,11 @@ export default {
       e = window.event || e
       let delta = this.clamp(e.wheelDelta || -e.detail, -4, 4)
       let fov = this.fov - delta
-      this.fov = this.clamp(fov, 20, 90)
+      this.fov = this.clamp(fov, this.minFov, this.maxFov)
     },
 
     stopDrag() {
-      if (this.dragging) {
-        this.dragging = false
-      }
+      this.dragging = this.pinching = false
     },
 
     resize() {
@@ -328,13 +349,14 @@ export default {
     const zoom = this.zoom.bind(this)
     const resize = this.resize.bind(resize)
     const dismiss = this.dismiss.bind(dismiss)
+
     if (addEventListener) {
       this.$el.addEventListener('mousewheel', zoom, false)
       this.$el.addEventListener('DOMMouseScroll', zoom, false)
       about.addEventListener('mousewheel', dismiss, false)
       about.addEventListener('DOMMouseScroll', dismiss, false)
-
-      addEventListener('resize', resize)
+      addEventListener('resize', resize, false)
+      addEventListener('touchmove', event => event.preventDefault(), false)
     } else {
       this.$el.attachEvent('onmousewheel', zoom)
       about.attachEvent('onmousewheel', dismiss)
@@ -343,7 +365,7 @@ export default {
 
     this.initShaders()
     this.loadTextures()
-    this.initModel()
+    this.initModel() 
     this.draw()
   },
 
@@ -361,6 +383,7 @@ export default {
     return {
       gl: null,
       dragging: false,
+      pinching: false,
       error: '',
 
       phi: -90,
@@ -368,13 +391,23 @@ export default {
       fov: 45,
       mouseX: 0,
       mouseY: 0,
+
+      minFov: 20,
+      maxFov: 90,
       
       previous: {
         phi: 0,
         theta: 0,
         fov: 0,
         mouseX: 0,
-        mouseY: 0
+        mouseY: 0,
+        touchPoints: []
+      },
+
+      target: {
+        phi: 0,
+        theta: 0,
+        fov: 0
       },
 
       textures: {
@@ -487,6 +520,7 @@ export default {
   height: 28px;
   transform: rotate(0);
   width: 28px;
+  transition: all 0.2s;
 }
 
 .campas > .direction > div {
