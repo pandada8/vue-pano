@@ -1,5 +1,5 @@
 <template>
-  <div class="viewport" v-el:viewport 
+  <div class="vue-pano viewport" v-el:viewport 
       @mousedown="startDrag" @touchstart="startDrag"
       @mousemove="onDrag" @touchmove="onDrag"
       @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag">
@@ -19,11 +19,11 @@
           </div>
         </div>
       </div>
-      <div class="about hover" v-el:about
-        @mousedown="dismiss" @touchstart="dismiss"
-        @mousemove="dismiss" @touchmove="dismiss">
-        <h3>{{ title }}</h3>
-        <article>{{ description }}</article>
+
+      <h3 class="title">{{ title }}</h3>
+
+      <div class="handle toggle-fullscreen">
+        <button @click="toggleFullscreen"></button>
       </div>
       <canvas v-el:canvas></canvas>
       <div class="debug" v-show="debug">fov: {{ fov }}, theta: {{ theta }}, phi: {{ phi }}</div>
@@ -58,10 +58,6 @@ export default {
     zoomout(e) {
       let fov = this.fov += 4
       this.fov = clamp(fov, this.minFov, this.maxFov)
-    },
-
-    dismiss(e) {
-      e.stopPropagation()
     },
 
     startDrag(e) {
@@ -123,16 +119,23 @@ export default {
 
     resize() {
       const ratio = window.devicePixelRatio || 1
-      const {width, height} = this
       const {canvas, viewport} = this.$els
+      let {width, height} = this
 
-      canvas.style.width = viewport.style.width = width ? width + 'px' : '100%'
-      canvas.style.height = viewport.style.height = height ? height + 'px' : '100%'
+      if (this.fullscreen) {
+        height = width = '100%'
+      } else if (+width == width && +height == height) {
+        width += 'px'
+        height += 'px'
+      }
 
+      canvas.style.width = viewport.style.width = width ? width : '100%'
+      canvas.style.height = viewport.style.height = height ? height : '100%'
       canvas.width = canvas.clientWidth * ratio
       canvas.height = canvas.clientHeight * ratio
 
       this.gl.viewport(0, 0, canvas.width, canvas.height)
+      this.draw(true)
     },
 
     initShaders() {
@@ -269,11 +272,41 @@ export default {
       return Math.abs(a - b) < 1e-4
     },
 
-    draw() {
+    toggleFullscreen() {
+      this.fullscreen = !this.fullscreen
+
+      let enter = this.$el.requestFullsceen,
+        leave = document.cancelFullScreen;
+
+      if (!enter) {
+        for (let vendor of ['webkit', 'moz', 'ms']) {
+          if ((vendor + 'RequestFullscreen') in this.$el) {
+            enter = this.$el[vendor + 'RequestFullscreen']
+            leave = document[vendor + 'ExitFullscreen']
+            break;
+          }
+        }
+
+        if (!enter) {
+          console.warn('Fullscreen API not avaliable on this browser')
+        }
+      }
+
+      if (this.fullscreen) {
+        enter.call(this.$el)
+      } else {
+        leave.call(document)
+      }
+
+      this.resize()
+    },
+
+    draw(force) {
       const gl = this.gl
 
       let {phi, theta, fov} = this
-      if (this.almostEqual(phi, this.previous.phi) 
+      if (!force
+          && this.almostEqual(phi, this.previous.phi) 
           && this.almostEqual(theta, this.previous.theta)
           && this.almostEqual(fov, this.previous.fov)) {
         requestAnimationFrame(this.draw.bind(this))
@@ -329,7 +362,7 @@ export default {
   },
 
   ready() {
-    const {canvas, about} = this.$els
+    const {canvas} = this.$els
     const gl = this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
 
     if (!gl) {
@@ -345,19 +378,15 @@ export default {
 
     const zoom = this.zoom.bind(this)
     const resize = this.resize.bind(resize)
-    const dismiss = this.dismiss.bind(dismiss)
 
     if (window.addEventListener) {
       this.$el.addEventListener('mousewheel', zoom, false)
       this.$el.addEventListener('DOMMouseScroll', zoom, false)
-      about.addEventListener('mousewheel', dismiss, false)
-      about.addEventListener('DOMMouseScroll', dismiss, false)
       addEventListener('resize', resize, false)
       addEventListener('touchmove', event => event.preventDefault(), false)
       document.body.addEventListener('touchstart', event => event.preventDefault())
     } else {
       this.$el.attachEvent('onmousewheel', zoom)
-      about.attachEvent('onmousewheel', dismiss)
       attachEvent('resize', resize)
     }
 
@@ -371,6 +400,7 @@ export default {
     width: String,
     height: String,
     title: String,
+    front: String,
     bundle: String,
     format: String,
     debug: String,
@@ -383,8 +413,9 @@ export default {
       dragging: false,
       pinching: false,
       error: '',
+      fullscreen: false,
 
-      phi: -90,
+      phi: 90,
       theta: 0,
       fov: 45,
       mouseX: 0,
@@ -447,25 +478,13 @@ export default {
   box-shadow: 0 4px 8px rgba(0, 0, 0, .25), 0 10px 10px rgba(0, 0, 0, .22);
 }
 
-.about {
-  background-color: #fff;
-  border-radius: 2px;
-  color: #3d3d3d;
-  font-size: 14px;
-  font-weight: 100;
-  line-height: 20px;
-  margin: 0;
-  overflow: hidden;
-  padding: 20px;
-  right: 10px;
-  top: 10px;
-  width: 240px;
-  z-index: 1;
-}
-
-.about h3 {
+.title {
+  color: #fff;
   font-size: 20px;
   font-weight: 300;
+  margin: 0;
+  right: 10px;
+  top: 10px;
 }
 
 .controls {
@@ -504,6 +523,26 @@ export default {
 
 .zoomout {
   border-radius: 0 0 2px 2px;
+}
+
+.toggle-fullscreen {
+  bottom: 10px;
+  right: 10px;
+  font-size: 0;
+}
+
+.toggle-fullscreen button {
+  border-radius: 2px;
+  padding: 2px;
+}
+
+.toggle-fullscreen button:after {
+  content: url(enter.svg);
+
+}
+
+.toggle-fullscreen.on button:after {
+  content: url(leave.svg);
 }
 
 .campas {
@@ -576,12 +615,6 @@ export default {
 canvas {
   background: #000;
   z-index: -1;
-}
-
-@media (max-width: 1024px) {
-  .about {
-    display: none;
-  }
 }
 
 </style>
