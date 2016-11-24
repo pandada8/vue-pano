@@ -5,17 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>vue-pano</title>
     <style type="text/css">
-      html, body {
+      body {
         font-family: sans-serif;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
+        max-width: 720px;
+        margin: auto;
       }
+
+      h1 {
+        font-weight: 100;
+        color: #666;
+        text-align: center;
+      }
+
+      .vue-pano {
+        margin: 10px auto;
+      }
+
     </style>
   </head>
   <body>
-    <pano title="长亭科技" debug="debug"
-      bundle="assets/pano/gate/" format="jpg" description="北京长亭科技有限公司（简称长亭科技）是一家以技术为导向的安全公司，专注于解决互联网安全问题。长亭科技拥有技术水平顶尖的安全研究团队与技术研发团队，致力于发展新型网络安全技术，提高国内安全水平，接轨国际顶尖技术。公司目前主营高度定制化的安全服务与安全产品，旨在通过发展新技术新方法，为企业提供有效的定制化安全解决方案，全面提高企业安全防御能力。"></pano>
+    <h1>Vue.js 全景漫游</h1>
+    <pano title="长亭科技前台" width="720" height="480" bundle="assets/pano/reception/" format="jpg"></pano>
+    <pano title="Hall of fame" width="720" height="480" bundle="assets/pano/hall-of-fame/" format="jpg"></pano>
+    <pano title="茶水间" width="720" height="480" bundle="assets/pano/pantry/" format="jpg"></pano>
+    
     <script src="dist/build.js"></script>
   </body>
 </html>
