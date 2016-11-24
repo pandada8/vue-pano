@@ -7,13 +7,13 @@
     <div class="error" v-if="error"><span>{{ error }}</span></div>
     <template v-else>
       <div class="controls" v-el:controls>
-        <div class="zoom">
+        <div class="zoom handle">
           <button class="zoomin" v-el:zoomin @click="zoomin">+</button>
           <button class="zoomout" v-el:zoomout @click="zoomout">-</button>
         </div>
 
         <div class="campas">
-          <div class="direction" v-bind:style="{ transform: 'rotate(' + phi + 'deg)' }" @click="reset">
+          <div class="direction" v-bind:style="{ transform: 'rotate(' + (-phi) + 'deg)' }" @click="reset">
             <div class="north"></div>
             <div class="south"></div>
           </div>
@@ -35,6 +35,7 @@
 <script>
 import Aff3d from './aff3d.js'
 import Vec3 from './vec3.js'
+import {clamp} from './util.js'
 
 const shaders = {
   fragment: require('raw!./fragment.glsl'),
@@ -45,22 +46,18 @@ const Promise = window.Promise || require('es6-promise').Promise;
 
 export default {
   methods: {
-    clamp(v, min, max) {
-      return Math.max(min, Math.min(max, v))
-    },
-
     reset() {
       this.phi = this.theta = 0
     },
 
     zoomin(e) {
       let fov = this.fov -= 4
-      this.fov = this.clamp(fov, this.minFov, this.maxFov)
+      this.fov = clamp(fov, this.minFov, this.maxFov)
     },
 
     zoomout(e) {
       let fov = this.fov += 4
-      this.fov = this.clamp(fov, this.minFov, this.maxFov)
+      this.fov = clamp(fov, this.minFov, this.maxFov)
     },
 
     dismiss(e) {
@@ -98,7 +95,7 @@ export default {
         let distance = Math.sqrt(Math.pow(p2.pageX - p1.pageX, 2) + Math.pow(p2.pageY - p1.pageY, 2))
         let fov = this.fov + (this.previous.pinchDistance - distance) / distance * (100 / window.devicePixelRatio)
         this.previous.pinchDistance = distance
-        this.fov = this.clamp(fov, this.minFov, this.maxFov)
+        this.fov = clamp(fov, this.minFov, this.maxFov)
         return
       }
 
@@ -109,15 +106,15 @@ export default {
         this.mouseY = e.pageY
         this.phi = this.previous.phi - speed * (this.mouseX - this.previous.mouseX)
         let theta = this.previous.theta + speed * (this.mouseY - this.previous.mouseY)
-        this.theta = this.clamp(theta, -90, 90)
+        this.theta = clamp(theta, -90, 90)
       }
     },
 
     zoom(e) {
       e = window.event || e
-      let delta = this.clamp(e.wheelDelta || -e.detail, -4, 4)
+      let delta = clamp(e.wheelDelta || -e.detail, -4, 4)
       let fov = this.fov - delta
-      this.fov = this.clamp(fov, this.minFov, this.maxFov)
+      this.fov = clamp(fov, this.minFov, this.maxFov)
     },
 
     stopDrag() {
@@ -350,7 +347,7 @@ export default {
     const resize = this.resize.bind(resize)
     const dismiss = this.dismiss.bind(dismiss)
 
-    if (addEventListener) {
+    if (window.addEventListener) {
       this.$el.addEventListener('mousewheel', zoom, false)
       this.$el.addEventListener('DOMMouseScroll', zoom, false)
       about.addEventListener('mousewheel', dismiss, false)
@@ -482,7 +479,7 @@ export default {
   margin-left: 12px;
 }
 
-.zoom > button {
+.handle button {
   background: rgba(0, 0, 0, 0.87);
   border: none;
   color: #c9c9c9;
@@ -493,11 +490,11 @@ export default {
   padding: 4px 8px;
 }
 
-.zoom > button:hover {
+.handle button:hover {
   color: #fff;
 }
 
-.zoom > button:focus {
+.handle button:focus {
   outline: none;
 }
 
