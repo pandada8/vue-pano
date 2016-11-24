@@ -125,8 +125,17 @@ export default {
       if (this.fullscreen) {
         height = width = '100%'
       } else if (+width == width && +height == height) {
-        width += 'px'
-        height += 'px'
+        if (width > this.$el.parentNode.clientWidth) {
+          width = '100%'
+        } else {
+          width += 'px'
+        }
+
+        if (height > this.$el.parentNode.clientHeight) {
+          height = '100%'
+        } else {
+          height += 'px'
+        }
       }
 
       canvas.style.width = viewport.style.width = width ? width : '100%'
