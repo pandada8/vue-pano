@@ -111,6 +111,7 @@ export default {
       let delta = clamp(e.wheelDelta || -e.detail, -4, 4)
       let fov = this.fov - delta
       this.fov = clamp(fov, this.minFov, this.maxFov)
+      e.preventDefault()
     },
 
     stopDrag() {
@@ -130,12 +131,7 @@ export default {
         } else {
           width += 'px'
         }
-
-        if (height > this.$el.parentNode.clientHeight) {
-          height = '100%'
-        } else {
-          height += 'px'
-        }
+        height += 'px'
       }
 
       canvas.style.width = viewport.style.width = width ? width : '100%'
@@ -282,7 +278,6 @@ export default {
     },
 
     toggleFullscreen() {
-      this.fullscreen = !this.fullscreen
 
       let enter = this.$el.requestFullsceen,
         leave = document.cancelFullScreen;
@@ -302,12 +297,11 @@ export default {
       }
 
       if (this.fullscreen) {
-        enter.call(this.$el)
-      } else {
         leave.call(document)
+      } else {
+        enter.call(this.$el)
       }
 
-      this.resize()
     },
 
     draw(force) {
@@ -367,6 +361,11 @@ export default {
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 30 * 2)
 
       requestAnimationFrame(this.draw.bind(this))
+    },
+
+    onFullscreenChange(){
+      this.fullscreen = Boolean(document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement)
+      this.resize()
     }
   },
 
@@ -385,7 +384,7 @@ export default {
     this.previous.theta = -this.theta
     this.previous.fov = -this.fov
 
-    const zoom = this.zoom.bind(this)
+    const zoom = this.zoom
     const resize = this.resize.bind(resize)
 
     if (window.addEventListener) {
@@ -394,6 +393,7 @@ export default {
       addEventListener('resize', resize, false)
       addEventListener('touchmove', event => event.preventDefault(), false)
       document.body.addEventListener('touchstart', event => event.preventDefault())
+      "mozfullscreenchange webkitfullscreenchange fullscreenchange".split(" ").forEach((event) => addEventListener(event, this.onFullscreenChange))
     } else {
       this.$el.attachEvent('onmousewheel', zoom)
       attachEvent('resize', resize)
@@ -472,6 +472,16 @@ export default {
 .viewport {
   font-family: Helvetica, Arial, sans-serif;
   position: relative;
+  cursor: move;
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.viewport:active {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing;
 }
 
 .viewport > * {
