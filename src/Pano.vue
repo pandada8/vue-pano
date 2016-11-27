@@ -1,8 +1,8 @@
 <template>
   <div class="vue-pano viewport" v-el:viewport 
-      @mousedown="startDrag" @touchstart="startDrag"
-      @mousemove="onDrag" @touchmove="onDrag"
-      @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag">
+      @mousedown="startDrag" @touchstart.prevent.stop="startDrag"
+      @mousemove="onDrag" @touchmove.prevent.stop="onDrag"
+      @mouseup="stopDrag" @touchend="stopDrag" @mouseleave="stopDrag" @mousewheel="zoom">
 
     <div class="error" v-if="error"><span>{{ error }}</span></div>
     <template v-else>
@@ -14,15 +14,22 @@
 
         <div class="campas">
           <div class="direction" v-bind:style="{ transform: 'rotate(' + (-phi) + 'deg)' }" @click="reset">
-            <div class="north"></div>
-            <div class="south"></div>
+            <svg width="37px" height="37px" viewBox="0 0 37 37" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+                    <g id="Path-1-Copy-2-+-Path-1" sketch:type="MSLayerGroup" transform="translate(3.000000, 4.000000)">
+                        <circle id="Oval-1" stroke="#000000" stroke-width="8" fill-opacity="0.48" fill="#000000" sketch:type="MSShapeGroup" cx="15.5" cy="14.5" r="14.5"></circle>
+                        <path d="M30,10 L30,18.7400396 L15,14.3700199 L30,10 Z" id="Path-1-Copy-2" fill="#C6C6C6" sketch:type="MSShapeGroup" transform="translate(22.500000, 14.370020) scale(-1, 1) translate(-22.500000, -14.370020) "></path>
+                        <path d="M15,10 L15,18.7400396 L0,14.3700199 L15,10 Z" id="Path-1" fill="#BA2226" sketch:type="MSShapeGroup"></path>
+                    </g>
+                </g>
+            </svg>
           </div>
         </div>
       </div>
 
       <h3 class="title">{{ title }}</h3>
 
-      <div class="handle toggle-fullscreen">
+      <div class="handle toggle-fullscreen" :class="{on: fullscreen}">
         <button @click="toggleFullscreen"></button>
       </div>
       <canvas v-el:canvas></canvas>
@@ -387,17 +394,8 @@ export default {
     const zoom = this.zoom
     const resize = this.resize.bind(resize)
 
-    if (window.addEventListener) {
-      this.$el.addEventListener('mousewheel', zoom, false)
-      this.$el.addEventListener('DOMMouseScroll', zoom, false)
-      addEventListener('resize', resize, false)
-      addEventListener('touchmove', event => event.preventDefault(), false)
-      document.body.addEventListener('touchstart', event => event.preventDefault())
-      "mozfullscreenchange webkitfullscreenchange fullscreenchange".split(" ").forEach((event) => addEventListener(event, this.onFullscreenChange))
-    } else {
-      this.$el.attachEvent('onmousewheel', zoom)
-      attachEvent('resize', resize)
-    }
+    window.addEventListener('resize', resize, false)
+    "mozfullscreenchange webkitfullscreenchange fullscreenchange".split(" ").forEach((event) => addEventListener(event, this.onFullscreenChange))
 
     this.initShaders()
     this.loadTextures()
@@ -553,11 +551,12 @@ export default {
 .toggle-fullscreen button {
   border-radius: 2px;
   padding: 2px;
+  height: 24px;
+  box-sizing: content-box;
 }
 
 .toggle-fullscreen button:after {
   content: url(enter.svg);
-
 }
 
 .toggle-fullscreen.on button:after {
@@ -566,34 +565,20 @@ export default {
 
 .campas {
   margin-top: 10px;
+  margin-left: 5px;
 }
 
 .campas > .direction {
-  background: rgba(0, 0, 0, 0.48);
-  border-radius: 26px;
-  border: 12px solid #000;
   cursor: pointer;
-  height: 28px;
+  height: 40px;
   transform: rotate(0);
-  width: 28px;
+  width: 40px;
   transition: all 0.2s;
 }
 
-.campas > .direction > div {
-  border-style: solid;
-  height: 0;
-  width: 0;
-  transform: translate(8px, -8px);
-}
-
-.campas .north {
-  border-color: transparent transparent #ba2226 transparent;
-  border-width: 0 6px 24px 6px;
-}
-
-.campas .south {
-  border-color: #c6c6c6 transparent transparent transparent;
-  border-width: 24px 6px 0 6px;
+.campas > .direction > svg {
+  width: 100%;
+  height: 100%;
 }
 
 .error {
